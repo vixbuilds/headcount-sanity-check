@@ -23,25 +23,15 @@ There are three resources. Each one is for a different person.
 
 ## How the questionnaire works
 
-Each answer decides the next question. Some answers stop the request. Others recommend a step first, such as posting the job internally. The manager can do the step and answer again, or continue and write why. Skipped steps appear at the top of the summary for the Req Approver.
+- Each answer decides the next question. Some answers stop the request.
+- Others recommend a step first, such as posting the job internally. The manager can do the step and answer again, or continue and write why. Skipped steps appear at the top of the summary for the Req Approver.
+- At the end, the **Sanity check** button lists thin answers, repeated answers, skipped steps, and choices that continued after advice. It says Ready to submit or Strengthen these answers first. It gives no approval score.
+- Answers stay in the manager's browser. Nothing is sent or saved anywhere. If the manager closes the page, their answers are gone, so they should copy the summary before they leave.
 
-## Put it on GitHub Pages (free)
+## Use your own copy
 
-1. On GitHub, click **New repository**. Give it a name, such as `headcount-check`. Choose **Public**. Free GitHub Pages needs a public repository.
-2. Click **uploading an existing file**. Drag in `index.html`, `headcount-checklist.pdf`, and `sample-team-survey.pdf`. Click **Commit changes**.
-3. Open **Settings**, then **Pages**. Under **Build and deployment**, choose **Deploy from a branch**. Pick **main** and the **/ (root)** folder. Click **Save**.
-4. Wait about a minute and refresh. The web address shows at the top of the Pages screen. It looks like `https://YOUR-NAME.github.io/headcount-check/`.
+To change questions or wording for your company, download the files and edit them.
 
-The survey PDF is a template, so it is fine to keep it in a public repository. Its link is `https://YOUR-NAME.github.io/headcount-check/sample-team-survey.pdf`. Share that link with HR teams, not hiring managers.
-
-## Things to know
-
-- Answers stay in the visitor's browser. Nothing is sent or saved anywhere. If someone closes the page, their answers are gone.
-- The questions live in `index.html`, in one block that starts with `const FLOW`. Question numbers update on their own when a question is added or removed.
-- The page loads two fonts from Google Fonts. If they cannot load, it uses the computer's own fonts.
-- At the end of the form, the **Sanity check** button reads the answers and lists thin answers, repeated answers, skipped steps, and choices that continued after advice. It says Ready to submit or Strengthen these answers first. It gives no approval score and sends nothing anywhere.
-- The private AI feedback button only appears when the page is opened inside Claude. On GitHub it stays hidden, because it would need a secret key and a server.
-
-## License
-
-No license is included. Add one if you want others to reuse this.
+- The questions live in `index.html`, in one block that starts with `const FLOW`. Question numbers update on their own when you add or remove a question.
+- `index.html` is one file and needs no server. You can put it on your intranet or any website.
+- The page loads two fonts from Google Fonts. If your network blocks them, it uses the computer's own fonts.
