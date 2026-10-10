@@ -620,18 +620,18 @@ const FLOW = {
     s22: { kind: "stop", title: "Hold for next quarter", body: "Submit this request with next quarter's batch so approvers can compare all requests together." },
 
     /* ---------- Pauses ---------- */
-    p1a: { kind: "pause", back: "q1a", title: "Check the role first", body: "Ask your manager whether the role should stay the same, change, or go away." },
-    p2: { kind: "pause", back: "q2", title: "Work out the timeline first", body: "Estimate how long this work will last. Ask your manager or look at the plan for the next year." },
-    p8: { kind: "pause", back: "q8", title: "Look at the process first", body: "Ask the people who do the work whether a process, tool, or approval step is the cause. A quick fix may remove the need." },
-    p10: { kind: "pause", back: "q10", title: "Check with other teams", body: "Ask your own team and other teams whether anyone already does these tasks." },
-    p11: { kind: "pause", back: "q11", title: "Look at the workload first", body: "Look at who does what across your team, plus overtime and time off. Then come back and describe what you found.", notePrompt: "What did you look at, and what did you find?" },
-    p13: { kind: "pause", back: "q13", title: "Talk to that team", body: "If another team needs the same skills, one shared request may cover both. Talk to them, then come back." },
-    p13b: { kind: "pause", back: "q13", title: "Ask nearby teams", body: "Ask nearby teams whether they need these skills, then come back." },
-    p14: { kind: "pause", back: "q14", title: "Ask your team first", body: "Ask your team and nearby teams whether anyone wants to grow into this role. Come back when you have asked." },
-    p15: { kind: "pause", back: "q15", title: "Post the job internally", body: "Post it inside the company first and give people time to apply. Come back with the results." },
-    p17: { kind: "pause", back: "q17", title: "Talk to HR about the level", body: "Ask HR or Compensation what level this role needs, then come back." },
-    p18: { kind: "pause", back: "q18", title: "Try other options first", body: "Try at least two of these options before you submit, then come back and tell us what happened." },
-    p21: { kind: "pause", back: "q21", title: "Show your manager first", body: "Your manager needs to see this request before you submit. Share it, then come back." }
+    p1a: { kind: "pause", cont: "q2", back: "q1a", title: "Check the role first", body: "Ask your manager whether the role should stay the same, change, or go away." },
+    p2: { kind: "pause", cont: "q3", back: "q2", title: "Work out the timeline first", body: "Estimate how long this work will last. Ask your manager or look at the plan for the next year." },
+    p8: { kind: "pause", cont: "q9", back: "q8", title: "Look at the process first", body: "Ask the people who do the work whether a process, tool, or approval step is the cause. A quick fix may remove the need." },
+    p10: { kind: "pause", cont: "q11", back: "q10", title: "Check with other teams", body: "Ask your own team and other teams whether anyone already does these tasks." },
+    p11: { kind: "pause", cont: "q12", back: "q11", title: "Look at the workload first", body: "Look at who does what across your team, plus overtime and time off. Then come back and describe what you found.", notePrompt: "What did you look at, and what did you find?" },
+    p13: { kind: "pause", cont: "q13a", back: "q13", title: "Talk to that team", body: "If another team needs the same skills, one shared request may cover both. Talk to them, then come back." },
+    p13b: { kind: "pause", cont: "q14", back: "q13", title: "Ask nearby teams", body: "Ask nearby teams whether they need these skills, then come back." },
+    p14: { kind: "pause", cont: "q15", back: "q14", title: "Ask your team first", body: "Ask your team and nearby teams whether anyone wants to grow into this role. Come back when you have asked." },
+    p15: { kind: "pause", cont: "q16", back: "q15", title: "Post the job internally", body: "Post it inside the company first and give people time to apply. Come back with the results." },
+    p17: { kind: "pause", cont: "q17a", back: "q17", title: "Talk to HR about the level", body: "Ask HR or Compensation what level this role needs, then come back." },
+    p18: { kind: "pause", cont: "q21", back: "q18", title: "Try other options first", body: "Try at least two of these options before you submit, then come back and tell us what happened." },
+    p21: { kind: "pause", cont: "q22", back: "q21", title: "Show your manager first", body: "Your manager needs to see this request before you submit. Share it, then come back." }
   }
 };
 Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
@@ -656,7 +656,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
   var HAS_B64 = typeof PDF_B64 === "string" && PDF_B64.length > 0;
   var CLAUDE_PAGE = typeof IN_CLAUDE !== "undefined" && IN_CLAUDE === true;
   var PDF_HREF = typeof PDF_URL === "string" ? PDF_URL : "";
-  var state = { tab: "try", cur: "intro", hist: [], ans: {}, notes: {}, fb: null, sampleOk: false, sanity: false };
+  var state = { tab: "try", cur: "intro", hist: [], ans: {}, notes: {}, skips: {}, fb: null, sampleOk: false, sanity: false };
   var sampleFn = null, fbCtl = null;
   var app = document.getElementById("app");
   var tabsEl = document.getElementById("tabs");
@@ -703,10 +703,11 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     return false;
   }
   function noteOk(id) { return (state.notes[id] || "").trim().length >= MIN_NOTE; }
+  function skipOk(id) { return (state.skips[id] || "").trim().length >= MIN_NOTE; }
   function canContinue() {
     var node = N[state.cur];
     if (!node) return false;
-    if (node.kind === "pause") return noteOk(node.id);
+    if (node.kind === "pause") return noteOk(node.id) || skipOk(node.id);
     return answered(node);
   }
   function fmt(node, v) {
@@ -745,7 +746,13 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     if (f && f.focus) f.focus();
   }
   function clearProblem() {
-    var el = document.getElementById("err");
+    var el = document.getElementById("err"), node = N[state.cur];
+    if (node && node.kind === "pause") {
+      var e2 = document.getElementById("err2");
+      if (el && noteOk(node.id)) el.hidden = true;
+      if (e2 && skipOk(node.id)) e2.hidden = true;
+      return;
+    }
     if (el && !el.hidden && canContinue()) el.hidden = true;
   }
 
@@ -765,7 +772,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
   }
   function restart() {
     if (fbCtl) { fbCtl.abort(); fbCtl = null; }
-    state.cur = "intro"; state.hist = []; state.ans = {}; state.notes = {}; state.fb = null;
+    state.cur = "intro"; state.hist = []; state.ans = {}; state.notes = {}; state.skips = {}; state.fb = null;
     render(true);
     jump();
   }
@@ -794,9 +801,21 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     var b = app.querySelector('[data-i="' + i + '"]');
     if (b) b.focus();
   }
+  function pauseErr(msg, sel) {
+    var el = document.getElementById(sel === "skip" ? "err2" : "err");
+    if (el) { el.textContent = msg; el.hidden = false; }
+    var f = app.querySelector('textarea[data-input="' + sel + '"]');
+    if (f) f.focus();
+  }
+  function continueFromPause() {
+    var node = N[state.cur];
+    if (!skipOk(node.id)) { pauseErr("Write at least " + MIN_NOTE + " characters about why you are continuing.", "skip"); return; }
+    go(node.cont);
+  }
   function returnFromPause() {
     var node = N[state.cur];
-    if (!noteOk(node.id)) { showProblem(); return; }
+    if (!noteOk(node.id)) { pauseErr("Write at least " + MIN_NOTE + " characters about what you did. Then you can go back to the question.", "note"); return; }
+    delete state.skips[node.id];
     state.hist.pop();
     delete state.ans[node.back];
     state.cur = node.back;
@@ -806,15 +825,16 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
 
   /* ---------- summary ---------- */
   function walkPath() {
-    var out = [], id = F.start, guard = 0;
+    var out = [], skipped = [], id = F.start, guard = 0;
     while (id && id !== "done" && guard++ < 200) {
       var node = N[id];
-      if (!node || node.kind === "stop" || node.kind === "pause") return { path: out, complete: false };
+      if (node && node.kind === "pause" && skipOk(id)) { skipped.push(node); id = node.cont; continue; }
+      if (!node || node.kind === "stop" || node.kind === "pause") return { path: out, skipped: skipped, complete: false };
       if (!answered(node)) return { path: out, complete: false };
       out.push(node);
       id = route(node, state.ans[id]);
     }
-    return { path: out, complete: id === "done" };
+    return { path: out, skipped: skipped, complete: id === "done" };
   }
   function buildSummary() {
     var w = walkPath(), ids = {}, rows = [], approver = [], flags = [], check = [], thin = [], advice = [], texts = [];
@@ -844,10 +864,13 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       if (node.dp) approver.push(row);
       if (node.verify) check.push({ q: row.q, text: node.verify });
     });
-    var pauses = [];
+    var pauses = [], skipped = [];
     Object.keys(state.notes).forEach(function (pid) {
       var p = N[pid], t = (state.notes[pid] || "").trim();
-      if (p && ids[p.back] && t) pauses.push({ q: lab(p.back), title: p.title, note: t });
+      if (p && ids[p.back] && t && w.skipped.indexOf(p) < 0) pauses.push({ q: lab(p.back), title: p.title, note: t });
+    });
+    w.skipped.forEach(function (p) {
+      skipped.push({ q: lab(p.back), title: p.title, answer: fmt(N[p.back], state.ans[p.back]), why: state.skips[p.id].trim() });
     });
     var groups = [];
     rows.forEach(function (r) {
@@ -855,7 +878,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       if (!g || g.section !== r.section) { g = { section: r.section, rows: [] }; groups.push(g); }
       g.rows.push(r);
     });
-    return { complete: w.complete, rows: rows, groups: groups, approver: approver, flags: flags, check: check, pauses: pauses, thin: thin, advice: advice, repeats: repeats(texts) };
+    return { complete: w.complete, rows: rows, groups: groups, approver: approver, flags: flags, check: check, pauses: pauses, thin: thin, advice: advice, skipped: skipped, repeats: repeats(texts) };
   }
   function today() {
     return new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
@@ -864,6 +887,11 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     var t = ["HEADCOUNT REQUEST SUMMARY", "Date: " + today(), ""];
     t.push("FOR THE APPROVER");
     t.push(SURVEY_NOTE);
+    if (s.skipped.length) {
+      t.push("", "STEPS SKIPPED (" + s.skipped.length + ")");
+      s.skipped.forEach(function (k) { t.push("Q" + k.q + " Skipped: " + k.title, "  Answer: " + k.answer, "  Why they continued: " + k.why); });
+      t.push("");
+    }
     s.approver.forEach(function (r) { t.push("Q" + r.q + " " + r.prompt, "  " + r.answer.replace(/\n/g, "\n  ")); });
     if (s.flags.length) { t.push("", "Flags"); s.flags.forEach(function (f) { t.push("  - " + f); }); }
     t.push("");
@@ -1038,7 +1066,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       '<p class="lead">Answer these questions first. Your answers decide what comes next, and some add follow-up questions.</p>' +
       '<ul class="legend">' +
       '<li><span class="pill stop">Stopped</span><span>The form ends because another path should come first. Nothing is submitted.</span></li>' +
-      '<li><span class="pill pause">Paused</span><span>Do one thing, tell us what happened, then return to the same question.</span></li>' +
+      '<li><span class="pill pause">Recommended step</span><span>We suggest one thing to do first. Do it and return to the question, or continue and say why. Your approver sees skipped steps.</span></li>' +
       '<li><span class="pill data">For your approver</span><span>A few answers never stop the form. They go to your approver as context.</span></li>' +
       '<li><span class="pill proof">Proof</span><span>When you say you did something, we ask who, when, and what happened.</span></li>' +
       '</ul>' +
@@ -1100,16 +1128,24 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       '<button type="button" class="btn" data-action="restart">Start over</button></div></section>';
   }
   function renderPause(node) {
-    var val = state.notes[node.id] || "";
-    return '<section class="card" aria-labelledby="qh"><div class="band pause">Paused</div>' +
+    var val = state.notes[node.id] || "", sk = state.skips[node.id] || "", q = esc(lab(node.back));
+    return '<section class="card" aria-labelledby="qh"><div class="band pause">Recommended step</div>' +
       '<h2 id="qh" class="q" tabindex="-1">' + esc(node.title) + "</h2>" +
       '<p class="lead">' + esc(node.body) + "</p>" +
+      '<p class="help">You can do this now, or continue and come back to it. If you continue, your approver will see that this step was skipped and your reason.</p>' +
+      '<h3 class="sh">If you did it</h3>' +
       '<label class="fl" for="ta">' + esc(node.notePrompt || DEFAULT_NOTE) + "</label>" +
       '<textarea id="ta" rows="4" data-input="note">' + esc(val) + "</textarea>" +
-      '<p class="help">At least ' + MIN_NOTE + " characters. This goes into your summary.</p>" +
+      '<p class="help">At least ' + MIN_NOTE + " characters. Then answer question " + q + " again.</p>" +
       '<p id="err" class="err" role="alert" hidden></p>' +
+      '<div class="actions"><button type="button" class="btn" data-action="return">Back to question ' + q + "</button></div>" +
+      '<h3 class="sh">If you have not done it</h3>' +
+      '<label class="fl" for="ta2">Why are you continuing without this step?</label>' +
+      '<textarea id="ta2" rows="3" data-input="skip" data-optional="1">' + esc(sk) + "</textarea>" +
+      '<p class="help">At least ' + MIN_NOTE + " characters. Your answer to question " + q + " stays as you gave it.</p>" +
+      '<p id="err2" class="err" role="alert" hidden></p>' +
       '<div class="actions"><button type="button" class="btn ghost" data-action="back">Change an answer</button>' +
-      '<button type="button" class="btn" data-action="return">Back to question ' + esc(lab(node.back)) + "</button></div></section>";
+      '<button type="button" class="btn ghost" data-action="skip">Continue and flag it</button></div></section>';
   }
   function rowHtml(r) {
     return '<div class="row"><span class="qn">Q' + esc(r.q) + '</span><div><p class="rp">' + esc(r.prompt) + (r.proof ? ' <span class="pill proof">Proof</span>' : "") + '</p><p class="ra">' + esc(r.answer) + "</p></div></div>";
@@ -1124,6 +1160,11 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     h += '<div id="copyfb" role="status" aria-live="polite"></div>';
     h += '<div id="fbk"></div>';
     if (state.sanity) h += sanityHtml(s);
+    if (s.skipped.length) {
+      h += '<div class="block fix"><h3>Steps skipped (' + s.skipped.length + ')</h3><p class="help">The manager answered honestly and continued without doing these steps.</p>';
+      s.skipped.forEach(function (k) { h += '<div class="row"><span class="qn">Q' + esc(k.q) + '</span><div><p class="rp">' + esc(k.title) + '</p><p class="ra">Answer: ' + esc(k.answer) + "\nWhy they continued: " + esc(k.why) + "</p></div></div>"; });
+      h += "</div>";
+    }
     h += '<div class="block data"><h3>For the approver</h3>';
     h += '<p class="help">' + esc(SURVEY_NOTE) + "</p>";
     s.approver.forEach(function (r) { h += rowHtml(r); });
@@ -1169,7 +1210,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     return "<h4>" + esc(title) + '</h4><ul class="flags">' + items.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
   }
   function sanityHtml(s) {
-    var ok = !s.thin.length && !s.advice.length && !s.repeats.length;
+    var ok = !s.thin.length && !s.advice.length && !s.repeats.length && !s.skipped.length;
     var other = s.flags.filter(function (f) { return f.indexOf("Short answer") !== 0 && f.indexOf("Continued after advice") !== 0; });
     var proofs = s.rows.filter(function (r) { return r.proof; }).length;
     var h = '<div class="block ' + (ok ? "ok" : "fix") + '" id="sanity" tabindex="-1" role="status"><h3>Sanity check</h3>';
@@ -1177,6 +1218,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     h += '<p class="help">This reads only what you wrote. It does not predict approval. Your approver also sees your budget and plan, which this page does not have.</p>';
     h += sanityList("Thin answers. Add names, dates, and numbers.", s.thin.map(function (x) { return "Q" + x.q + ": " + clip(x.what); }));
     h += sanityList("Repeated answers. Write something specific for each question.", s.repeats.map(function (x) { return "Q" + x.a + " and Q" + x.b + " have the same answer."; }));
+    h += sanityList("Steps you skipped. Do them if you can. Your approver will see each one.", s.skipped.map(function (x) { return "Q" + x.q + ": " + x.title; }));
     h += sanityList("You continued after advice. Your approver will ask why.", s.advice.map(function (x) { return "Q" + x.q + ": " + x.text; }));
     h += sanityList("Your approver will also see", other);
     h += '<p class="help">You gave proof for ' + proofs + " question" + (proofs === 1 ? "" : "s") + ". Your reviewer will check each one.</p></div>";
@@ -1215,7 +1257,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     h += '<div class="actions top"><button type="button" class="btn" data-action="copyjson">Copy flow as JSON</button></div><div id="copyfb" role="status" aria-live="polite"></div>';
     h += '<h3 class="sh">Rules</h3><ul class="rules">' +
       "<li><b>STOP</b> ends the form. Nothing is submitted. The manager can change an answer or start over.</li>" +
-      "<li><b>PAUSE</b> asks for a note of " + MIN_NOTE + " or more characters, then returns to the same question with the answer cleared. If the note is too short, the button shows a message instead.</li>" +
+      "<li><b>PAUSE</b> (shown as Recommended step) gives guidance and two ways forward. Did it: write a note of " + MIN_NOTE + " or more characters, then return to the same question with the answer cleared. Not done: write a reason of " + MIN_NOTE + " or more characters, keep the honest answer, and continue. Skipped steps appear at the top of the summary and in the sanity check.</li>" +
       "<li><b>Heads up</b> screens let the manager stop, or continue with a flag for the approver and a required reason.</li>" +
       "<li><b>Data point</b> answers never stop the form. They appear in the summary under For the approver.</li>" +
       "<li><b>Proof</b> answers ask who, when, and what happened. Each one adds a line to the reviewer checklist.</li>" +
@@ -1237,7 +1279,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       var n = N[id];
       if (n.kind !== "stop" && n.kind !== "pause") return;
       h += "<tr><td><span class=\"pill " + n.kind + '">' + (n.kind === "stop" ? "Stop" : "Pause") + "</span></td><td>" + esc(n.title) + "</td><td>" + esc(n.body) + "</td><td>" +
-        (n.kind === "stop" ? "Ends the form." : "Returns to Q" + esc(lab(n.back)) + ".") + "</td></tr>";
+        (n.kind === "stop" ? "Ends the form." : "Did it: back to Q" + esc(lab(n.back)) + ". Not done: flagged, then " + esc(tgt(n.cont)) + ".") + "</td></tr>";
     });
     h += "</tbody></table></div></section>";
     return h;
@@ -1279,6 +1321,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     else if (a === "next") tryNext();
     else if (a === "back") back();
     else if (a === "return") returnFromPause();
+    else if (a === "skip") continueFromPause();
     else if (a === "restart") restart();
     else if (a === "copy") copyText(summaryText(buildSummary()));
     else if (a === "copyjson") copyText(JSON.stringify(F, null, 2));
@@ -1299,6 +1342,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       var o = state.ans[state.cur] || (state.ans[state.cur] = {});
       o[t.getAttribute("data-f")] = t.value;
     } else if (kind === "note") state.notes[state.cur] = t.value;
+    else if (kind === "skip") state.skips[state.cur] = t.value;
     else return;
     clearProblem();
   });
@@ -1312,7 +1356,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     if (state.tab !== "try") return;
     var t = e.target, typing = t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT");
     if (e.ctrlKey || e.metaKey) {
-      if (typing && e.key === "Enter") { e.preventDefault(); if (N[state.cur] && N[state.cur].kind === "pause") returnFromPause(); else tryNext(); }
+      if (typing && e.key === "Enter") { e.preventDefault(); if (N[state.cur] && N[state.cur].kind === "pause") { if (t.getAttribute("data-input") === "skip") continueFromPause(); else returnFromPause(); } else tryNext(); }
       return;
     }
     if (e.altKey || typing) return;
