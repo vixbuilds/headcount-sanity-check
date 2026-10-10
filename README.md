@@ -35,3 +35,11 @@ To change questions or wording for your company, download the files and edit the
 - The questions live in `index.html`, in one block that starts with `const FLOW`. Question numbers update on their own when you add or remove a question.
 - `index.html` is one file and needs no server. You can put it on your intranet or any website.
 - The page loads two fonts from Google Fonts. If your network blocks them, it uses the computer's own fonts.
+
+## License
+
+Free to use and adapt under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). You can use it at work, change it, and share it. Please credit it like this:
+
+> Headcount Sanity Check by vixbuilds, https://github.com/vixbuilds/headcount-sanity-check, licensed under CC BY 4.0. Changed by [your company] (if you changed it).
+
+If you use the files as they are, keeping the GitHub link at the bottom of each page and this README is enough. If you change them, also add the credit line above somewhere people will see it, such as your intranet page.
