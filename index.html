@@ -258,7 +258,7 @@ const FLOW = {
     q3: {
       section: "need", kind: "text", dp: true, thin: 40,
       prompt: "In your own words, what does a long-term need mean for this role, and why does this role meet it?",
-      help: "Your approver reads this to decide whether the demand will last. Be specific about what keeps the work coming.",
+      help: "Your Req Approver reads this to decide whether the demand will last. Be specific about what keeps the work coming.",
       next: "q4"
     },
     q4: {
@@ -290,7 +290,7 @@ const FLOW = {
     q6: {
       section: "need", kind: "choice", dp: true,
       prompt: "How long has this need existed?",
-      help: "This never stops the form. It gives your approver context.",
+      help: "This never stops the form. It gives your Req Approver context.",
       flagOn: {
         "1 to 3 years": "The team has had this need for 1 to 3 years.",
         "More than 3 years": "The team has had this need for more than 3 years."
@@ -359,7 +359,7 @@ const FLOW = {
     q11: {
       section: "cover", kind: "choice",
       prompt: "How is the work divided across your current team?",
-      help: "Your approver reads this next to the team survey results.",
+      help: "Your Req Approver reads this next to the team survey results.",
       options: [
         { label: "Evenly, and I check it regularly", go: "q11a" },
         { label: "Mostly even, but I have not checked closely", go: "p11" },
@@ -387,8 +387,8 @@ const FLOW = {
     },
     q12: {
       section: "cover", kind: "choice", dp: true,
-      prompt: "The committee will send an anonymous survey to your current team as part of this request. It will cover their current work-life balance, workload balancing, and fairness in work delegation. How do you feel about that?",
-      help: "We will share the survey results with you, though you will not see individual answers. You will see only aggregated responses. Your team's answers will be considered by the committee.",
+      prompt: "Your Req Approver will send an anonymous survey to your current team as part of this request. It will cover their current work-life balance, workload balancing, and fairness in work delegation. How do you feel about that?",
+      help: "We will share the survey results with you, though you will not see individual answers. You will see only aggregated responses. Your team's answers will be considered by your Req Approver.",
       flagOn: {
         "I have some concerns": "The manager has concerns about the team survey.",
         "I would rather it did not happen": "The manager would rather the team survey did not happen."
@@ -565,7 +565,7 @@ const FLOW = {
     a22: {
       sub: "a", section: "approval", kind: "choice", tone: "advice",
       prompt: "This could go in next quarter's batch",
-      help: "Reviewing every request together helps approvers compare them fairly.",
+      help: "Reviewing every request together helps Req Approvers compare them fairly.",
       options: [
         { label: "Hold for next quarter", go: "s22" },
         { label: "Submit now", go: "q22a", flag: "Continued after advice: the manager said the role could wait." }
@@ -579,7 +579,7 @@ const FLOW = {
     q23: {
       section: "approval", kind: "choice", dp: true,
       prompt: "This is a hypothetical question. If opening this role meant giving up one of your current roles, would you still say yes?",
-      help: "This is only a thought exercise. No staff will be cut automatically if this headcount is approved. The question never stops the form. It shows your approver how you rank this role.",
+      help: "This is only a thought exercise. No staff will be cut automatically if this headcount is approved. The question never stops the form. It shows your Req Approver how you rank this role.",
       flagOn: {
         "No": "In the hypothetical, the manager would not give up a current role to open this one.",
         "Not sure": "In the hypothetical, the manager is unsure about giving up a current role to open this one."
@@ -617,7 +617,7 @@ const FLOW = {
     s15: { kind: "stop", title: "Review the internal candidate first", body: "Someone has shown interest in this role. Review that candidate before you request a new hire. Start again if they are not a fit, and explain why." },
     s16: { kind: "stop", title: "Test automation first", body: "If an AI or automated tool can do most of this job, test it before you request a hire. Start again with the results." },
     s16b: { kind: "stop", title: "Find out first", body: "Ask your IT or operations lead whether AI or automation could do some of this work. Start again with what you learn." },
-    s22: { kind: "stop", title: "Hold for next quarter", body: "Submit this request with next quarter's batch so approvers can compare all requests together." },
+    s22: { kind: "stop", title: "Hold for next quarter", body: "Submit this request with next quarter's batch so Req Approvers can compare all requests together." },
 
     /* ---------- Pauses ---------- */
     p1a: { kind: "pause", cont: "q2", back: "q1a", title: "Check the role first", body: "Ask your manager whether the role should stay the same, change, or go away." },
@@ -652,7 +652,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
   var LETTERS = "ABCDEFGHIJKLMNOP";
   var MIN_NOTE = 10;
   var DEFAULT_NOTE = "What did you do? Who was involved, when, and what happened?";
-  var SURVEY_NOTE = "The committee sends an anonymous survey to the current team with this request. The manager sees only the combined results, not individual answers.";
+  var SURVEY_NOTE = "The Req Approver sends an anonymous survey to the current team with this request. The manager sees only the combined results, not individual answers.";
   var HAS_B64 = typeof PDF_B64 === "string" && PDF_B64.length > 0;
   var CLAUDE_PAGE = typeof IN_CLAUDE !== "undefined" && IN_CLAUDE === true;
   var PDF_HREF = typeof PDF_URL === "string" ? PDF_URL : "";
@@ -885,7 +885,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
   }
   function summaryText(s) {
     var t = ["HEADCOUNT REQUEST SUMMARY", "Date: " + today(), ""];
-    t.push("FOR THE APPROVER");
+    t.push("FOR THE REQ APPROVER");
     t.push(SURVEY_NOTE);
     if (s.skipped.length) {
       t.push("", "STEPS SKIPPED (" + s.skipped.length + ")");
@@ -906,7 +906,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       s.pauses.forEach(function (p) { t.push("Q" + p.q + " " + p.title, "  " + p.note); });
       t.push("");
     }
-    t.push("REVIEWER CHECKLIST");
+    t.push("REQ APPROVER CHECKLIST");
     s.check.forEach(function (c) { t.push("[ ] Q" + c.q + ": " + c.text); });
     return t.join("\n");
   }
@@ -954,7 +954,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     getCap("downloads").then(function (d) {
       if (!d) { say("Downloads are not available in this view. Ask the person who shared this page for the PDF."); return; }
       return d.save({ filename: "Headcount-Sanity-Check-Checklist.pdf", data: pdfBlob() }).then(function () {
-        say("Saved. Print it, fill it in by hand, and give it to whoever reviews requests.");
+        say("Saved. Print it, fill it in by hand, and give it to your Req Approver.");
       }, function (e) {
         say(e && e.code === "declined" ? "" : "The file could not be saved here.");
       });
@@ -965,7 +965,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
   var HIDE_CODES = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
   function feedbackPrompt() {
     return [
-      "You are coaching a hiring manager who is about to submit a request for a new headcount. Review the request below and give feedback to the manager before an approver sees it.",
+      "You are coaching a hiring manager who is about to submit a request for a new headcount. Review the request below and give feedback to the manager before a Req Approver sees it.",
       "",
       "Rules:",
       "- Do not predict whether it will be approved, and do not give a percentage or a score. You do not know this company's budget, headcount plan, or priorities. Say so where it matters.",
@@ -978,7 +978,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       '"summary": 2 to 3 sentences on how complete and convincing the request reads,',
       '"strong": an array of up to 3 strings, what is solid,',
       '"gaps": an array of up to 5 strings, what is thin, missing, or inconsistent,',
-      '"questions": an array of up to 5 strings, questions an approver is likely to ask,',
+      '"questions": an array of up to 5 strings, questions a Req Approver is likely to ask,',
       '"next": an array of up to 3 strings, concrete things to do before submitting.',
       "",
       "<request>",
@@ -1014,7 +1014,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     if (!CLAUDE_PAGE || !state.sampleOk) { el.innerHTML = ""; return; }
     var f = state.fb;
     var h = '<div class="block fb"><h3>Private feedback from Claude</h3>';
-    h += '<p class="help">Only you see this. It is not part of the summary and is not sent to your approver. Your answers go to Claude to write it, and it uses your own Claude usage. Leave out names if your company limits sharing employee details with AI tools.</p>';
+    h += '<p class="help">Only you see this. It is not part of the summary and is not sent to your Req Approver. Your answers go to Claude to write it, and it uses your own Claude usage. Leave out names if your company limits sharing employee details with AI tools.</p>';
     if (!f) {
       h += '<button type="button" class="btn ghost" data-action="fb-run">Get feedback</button>';
     } else if (f.status === "loading") {
@@ -1028,7 +1028,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       h += "<p class=\"help\"><b>This is a coaching read, not a prediction.</b> Claude does not know your budget, your plan, or your company's priorities.</p>";
       if (d.summary) h += '<p class="fbsum">' + esc(d.summary) + "</p>";
       h += fbList("What is strong", d.strong) + fbList("What is thin or missing", d.gaps) +
-        fbList("Questions your approver may ask", d.questions) + fbList("Before you submit", d.next);
+        fbList("Questions your Req Approver may ask", d.questions) + fbList("Before you submit", d.next);
       h += '<button type="button" class="btn ghost" data-action="fb-run">Run it again</button>';
     }
     h += "</div>";
@@ -1066,8 +1066,8 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       '<p class="lead">Answer these questions first. Your answers decide what comes next, and some add follow-up questions.</p>' +
       '<ul class="legend">' +
       '<li><span class="pill stop">Stopped</span><span>The form ends because another path should come first. Nothing is submitted.</span></li>' +
-      '<li><span class="pill pause">Recommended step</span><span>We suggest one thing to do first. Do it and return to the question, or continue and say why. Your approver sees skipped steps.</span></li>' +
-      '<li><span class="pill data">For your approver</span><span>A few answers never stop the form. They go to your approver as context.</span></li>' +
+      '<li><span class="pill pause">Recommended step</span><span>We suggest one thing to do first. Do it and return to the question, or continue and say why. Your Req Approver sees skipped steps.</span></li>' +
+      '<li><span class="pill data">For your Req Approver</span><span>A few answers never stop the form. They go to your Req Approver as context.</span></li>' +
       '<li><span class="pill proof">Proof</span><span>When you say you did something, we ask who, when, and what happened.</span></li>' +
       '</ul>' +
       '<div class="actions"><button type="button" class="btn" data-action="start">Start</button></div></section>';
@@ -1082,7 +1082,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     h += '<h2 id="qh" class="q" tabindex="-1">' + esc(node.prompt) + "</h2>";
     if (node.help) h += '<p class="help">' + esc(node.help) + "</p>";
     var tags = "";
-    if (node.dp) tags += '<span class="pill data">Goes to your approver</span>';
+    if (node.dp) tags += '<span class="pill data">Goes to your Req Approver</span>';
     if (node.optional) tags += '<span class="pill">Optional</span>';
     if (tags) h += '<p class="tags">' + tags + "</p>";
     if (node.kind === "choice") {
@@ -1132,7 +1132,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     return '<section class="card" aria-labelledby="qh"><div class="band pause">Recommended step</div>' +
       '<h2 id="qh" class="q" tabindex="-1">' + esc(node.title) + "</h2>" +
       '<p class="lead">' + esc(node.body) + "</p>" +
-      '<p class="help">You can do this now, or continue and come back to it. If you continue, your approver will see that this step was skipped and your reason.</p>' +
+      '<p class="help">You can do this now, or continue and come back to it. If you continue, your Req Approver will see that this step was skipped and your reason.</p>' +
       '<h3 class="sh">If you did it</h3>' +
       '<label class="fl" for="ta">' + esc(node.notePrompt || DEFAULT_NOTE) + "</label>" +
       '<textarea id="ta" rows="4" data-input="note">' + esc(val) + "</textarea>" +
@@ -1155,7 +1155,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     if (!s.complete) return '<section class="card"><h2 class="q" tabindex="-1" id="qh">Some answers are missing</h2><div class="actions"><button type="button" class="btn" data-action="restart">Start over</button></div></section>';
     var h = '<section class="card sum" aria-labelledby="qh"><div class="band done">Complete</div>';
     h += '<h2 id="qh" class="q" tabindex="-1">Headcount request summary</h2>';
-    h += '<p class="help">' + esc(today()) + ". Nothing is sent from this page. Copy the summary and give it to whoever reviews requests.</p>";
+    h += '<p class="help">' + esc(today()) + ". Nothing is sent from this page. Copy the summary and give it to your Req Approver.</p>";
     h += '<div class="actions top"><button type="button" class="btn" data-action="sanity">Sanity check</button><button type="button" class="btn ghost" data-action="copy">Copy summary</button><button type="button" class="btn ghost" data-action="restart">Start over</button></div>';
     h += '<div id="copyfb" role="status" aria-live="polite"></div>';
     h += '<div id="fbk"></div>';
@@ -1165,7 +1165,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       s.skipped.forEach(function (k) { h += '<div class="row"><span class="qn">Q' + esc(k.q) + '</span><div><p class="rp">' + esc(k.title) + '</p><p class="ra">Answer: ' + esc(k.answer) + "\nWhy they continued: " + esc(k.why) + "</p></div></div>"; });
       h += "</div>";
     }
-    h += '<div class="block data"><h3>For the approver</h3>';
+    h += '<div class="block data"><h3>For the Req Approver</h3>';
     h += '<p class="help">' + esc(SURVEY_NOTE) + "</p>";
     s.approver.forEach(function (r) { h += rowHtml(r); });
     if (s.flags.length) {
@@ -1185,7 +1185,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       s.pauses.forEach(function (p) { h += '<div class="row"><span class="qn">Q' + esc(p.q) + '</span><div><p class="rp">' + esc(p.title) + '</p><p class="ra">' + esc(p.note) + "</p></div></div>"; });
       h += "</div>";
     }
-    h += '<div class="block"><h3>Reviewer checklist</h3><ul class="check">';
+    h += '<div class="block"><h3>Req Approver checklist</h3><ul class="check">';
     s.check.forEach(function (c, i) {
       h += '<li><input type="checkbox" id="ck' + i + '"><label for="ck' + i + '"><span class="qn">Q' + esc(c.q) + "</span> " + esc(c.text) + "</label></li>";
     });
@@ -1215,13 +1215,13 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     var proofs = s.rows.filter(function (r) { return r.proof; }).length;
     var h = '<div class="block ' + (ok ? "ok" : "fix") + '" id="sanity" tabindex="-1" role="status"><h3>Sanity check</h3>';
     h += '<p class="verdict">' + (ok ? "Ready to submit" : "Strengthen these answers first") + "</p>";
-    h += '<p class="help">This reads only what you wrote. It does not predict approval. Your approver also sees your budget and plan, which this page does not have.</p>';
+    h += '<p class="help">This reads only what you wrote. It does not predict approval. Your Req Approver also sees your budget and plan, which this page does not have.</p>';
     h += sanityList("Thin answers. Add names, dates, and numbers.", s.thin.map(function (x) { return "Q" + x.q + ": " + clip(x.what); }));
     h += sanityList("Repeated answers. Write something specific for each question.", s.repeats.map(function (x) { return "Q" + x.a + " and Q" + x.b + " have the same answer."; }));
-    h += sanityList("Steps you skipped. Do them if you can. Your approver will see each one.", s.skipped.map(function (x) { return "Q" + x.q + ": " + x.title; }));
-    h += sanityList("You continued after advice. Your approver will ask why.", s.advice.map(function (x) { return "Q" + x.q + ": " + x.text; }));
-    h += sanityList("Your approver will also see", other);
-    h += '<p class="help">You gave proof for ' + proofs + " question" + (proofs === 1 ? "" : "s") + ". Your reviewer will check each one.</p></div>";
+    h += sanityList("Steps you skipped. Do them if you can. Your Req Approver will see each one.", s.skipped.map(function (x) { return "Q" + x.q + ": " + x.title; }));
+    h += sanityList("You continued after advice. Your Req Approver will ask why.", s.advice.map(function (x) { return "Q" + x.q + ": " + x.text; }));
+    h += sanityList("Your Req Approver will also see", other);
+    h += '<p class="help">You gave proof for ' + proofs + " question" + (proofs === 1 ? "" : "s") + ". Your Req Approver will check each one.</p></div>";
     return h;
   }
   function showSanity() {
@@ -1258,11 +1258,11 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     h += '<h3 class="sh">Rules</h3><ul class="rules">' +
       "<li><b>STOP</b> ends the form. Nothing is submitted. The manager can change an answer or start over.</li>" +
       "<li><b>PAUSE</b> (shown as Recommended step) gives guidance and two ways forward. Did it: write a note of " + MIN_NOTE + " or more characters, then return to the same question with the answer cleared. Not done: write a reason of " + MIN_NOTE + " or more characters, keep the honest answer, and continue. Skipped steps appear at the top of the summary and in the sanity check.</li>" +
-      "<li><b>Heads up</b> screens let the manager stop, or continue with a flag for the approver and a required reason.</li>" +
-      "<li><b>Data point</b> answers never stop the form. They appear in the summary under For the approver.</li>" +
-      "<li><b>Proof</b> answers ask who, when, and what happened. Each one adds a line to the reviewer checklist.</li>" +
-      "<li>The committee sends an anonymous survey to the current team with every request. The manager sees only the combined results. Question " + lab("q12") + " records how the manager feels about it and never stops the form.</li>" +
-      "<li>Short answers on key text questions are flagged for the approver. Salary stays blank for HR/Compensation.</li>" +
+      "<li><b>Heads up</b> screens let the manager stop, or continue with a flag for the Req Approver and a required reason.</li>" +
+      "<li><b>Data point</b> answers never stop the form. They appear in the summary under For the Req Approver.</li>" +
+      "<li><b>Proof</b> answers ask who, when, and what happened. Each one adds a line to the Req Approver checklist.</li>" +
+      "<li>The Req Approver sends an anonymous survey to the current team with every request. The manager sees only the combined results. Question " + lab("q12") + " records how the manager feels about it and never stops the form.</li>" +
+      "<li>Short answers on key text questions are flagged for the Req Approver. Salary stays blank for HR/Compensation.</li>" +
       "<li>The summary has a <b>Sanity check</b> button. It lists thin answers, repeated answers, and choices that continued after advice. It says Ready to submit or Strengthen these answers first. It gives no approval score or percentage. Nothing is sent anywhere.</li></ul>";
     h += '<h3 class="sh">Questions</h3><div class="scroll"><table><thead><tr><th>Q</th><th>Screen</th><th>Type</th><th>Next</th><th>Notes</th></tr></thead><tbody>';
     F.order.forEach(function (id) {
