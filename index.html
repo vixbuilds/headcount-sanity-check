@@ -208,7 +208,7 @@ const FLOW = {
   },
   /* Question numbers come from this list. Ids stay the same when questions are added or removed. */
   order: [
-    "q1", "q1a", "q2", "a2", "q3", "q4", "q4a", "q5", "q6", "q6a",
+    "q1", "q1a", "q2", "a2", "q2b", "q4", "q4a", "q5", "q6", "q6a",
     "q8", "q8a", "q9", "q10", "q10a", "q11", "q11a", "q11b", "q12", "q12a",
     "q13", "q13a", "q14", "q14a", "q15", "q15a", "q16", "q16a", "q16b",
     "q17", "q17a", "q18", "q18a",
@@ -239,8 +239,8 @@ const FLOW = {
       prompt: "How long will the work last?",
       options: [
         { label: "Under 6 months", go: "a2" },
-        { label: "6 to 12 months", go: "q3" },
-        { label: "12 months or more, ongoing", go: "q3" },
+        { label: "6 to 12 months", go: "q2b" },
+        { label: "12 months or more, ongoing", go: "q4" },
         { label: "I don't know", go: "p2" }
       ]
     },
@@ -250,17 +250,18 @@ const FLOW = {
       help: "Work that ends within 6 months usually costs less and carries less risk as contractor or vendor work than as a permanent hire.",
       options: [
         { label: "Try that instead", go: "s2" },
-        { label: "I still need a full-time hire", go: "q3", flag: "Continued after advice: the work lasts under 6 months." }
+        { label: "I still need a full-time hire", go: "q2b", flag: "Continued after advice: the work lasts under 6 months." }
       ]
     },
 
-    /* ---------- The need ---------- */
-    q3: {
-      section: "need", kind: "text", dp: true, thin: 40,
-      prompt: "In your own words, what does a long-term need mean for this role, and why does this role meet it?",
-      help: "Your Req Approver reads this to decide whether the demand will last. Be specific about what keeps the work coming.",
+    q2b: {
+      sub: "b", section: "request", kind: "text", dp: true, thin: 40,
+      prompt: "Why does it need a permanent hire? What will this person do after the work ends?",
+      help: "Your Req Approver reads this to decide whether a contractor or temp would fit better.",
       next: "q4"
     },
+
+    /* ---------- The need ---------- */
     q4: {
       section: "need", kind: "choice",
       prompt: "Which goal does this hire move?",
@@ -621,11 +622,11 @@ const FLOW = {
 
     /* ---------- Pauses ---------- */
     p1a: { kind: "pause", cont: "q2", back: "q1a", title: "Check the role first", body: "Ask your manager whether the role should stay the same, change, or go away." },
-    p2: { kind: "pause", cont: "q3", back: "q2", title: "Work out the timeline first", body: "Estimate how long this work will last. Ask your manager or look at the plan for the next year." },
+    p2: { kind: "pause", cont: "q2b", back: "q2", title: "Work out the timeline first", body: "Estimate how long this work will last. Ask your manager or look at the plan for the next year." },
     p8: { kind: "pause", cont: "q9", back: "q8", title: "Look at the process first", body: "Ask the people who do the work whether a process, tool, or approval step is the cause. A quick fix may remove the need." },
     p10: { kind: "pause", cont: "q11", back: "q10", title: "Check with other teams", body: "Ask your own team and other teams whether anyone already does these tasks." },
     p11: { kind: "pause", cont: "q12", back: "q11", title: "Look at the workload first", body: "Look at who does what across your team, plus overtime and time off. Then come back and describe what you found.", notePrompt: "What did you look at, and what did you find?" },
-    p13: { kind: "pause", cont: "q13a", back: "q13", title: "Talk to that team", body: "If another team needs the same skills, one shared request may cover both. Talk to them, then come back." },
+    p13: { kind: "pause", cont: "q14", back: "q13", title: "Talk to that team", body: "If another team needs the same skills, one shared request may cover both. Talk to them, then come back." },
     p13b: { kind: "pause", cont: "q14", back: "q13", title: "Ask nearby teams", body: "Ask nearby teams whether they need these skills, then come back." },
     p14: { kind: "pause", cont: "q15", back: "q14", title: "Ask your team first", body: "Ask your team and nearby teams whether anyone wants to grow into this role. Come back when you have asked." },
     p15: { kind: "pause", cont: "q16", back: "q15", title: "Post the job internally", body: "Post it inside the company first and give people time to apply. Come back with the results." },
