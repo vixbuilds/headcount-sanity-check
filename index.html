@@ -121,6 +121,8 @@ textarea { resize: vertical; min-height: 7rem; }
 #dlfb:empty { display: none; }
 .err { margin: 12px 0 0; color: var(--stop); font-size: .92rem; }
 a.btn { display: inline-block; text-decoration: none; }
+.credit { margin: 32px 0 8px; padding-top: 12px; border-top: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
+.credit a { color: var(--muted); }
 [hidden] { display: none !important; }
 .btn {
   appearance: none; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
@@ -192,6 +194,7 @@ tr:last-child td { border-bottom: 0; }
     <div id="paper" class="paper"></div>
   </header>
   <main id="app"></main>
+  <footer class="credit"><a href="https://github.com/vixbuilds/headcount-sanity-check">github.com/vixbuilds/headcount-sanity-check</a></footer>
 </div>
 
 <script>
@@ -837,8 +840,25 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     }
     return { path: out, skipped: skipped, complete: id === "done" };
   }
+  /* Non-answers: short answers that dodge the question. General phrases, not tied to any one question. */
+  var VAGUE = [/\b(i )?(don'?t|do not|dont) know\b(?! of\b)/, /\bidk\b/, /\bnot sure\b/, /\bunsure\b/, /\btbd\b/, /\bno idea\b/,
+    /\b(figure|work|sort) (it|this|that)( \w+)? out\b/, /\b(later|eventually)[.!]*$/, /^(see|same as) above\b/, /^n\/?a[.!]*$/, /^([-\u2013\u2014]+|\?+|\.+)$/];
+  function vague(t) {
+    t = String(t || "").trim().toLowerCase().replace(/[\u2018\u2019]/g, "'");
+    if (!t || t.split(/\s+/).length >= 20) return false;
+    return VAGUE.some(function (re) { return re.test(t); });
+  }
   function buildSummary() {
-    var w = walkPath(), ids = {}, rows = [], approver = [], flags = [], check = [], thin = [], advice = [], texts = [];
+    var w = walkPath(), ids = {}, rows = [], approver = [], flags = [], check = [], thin = [], advice = [], texts = [], vagueList = [];
+    var skipAt = {};
+    w.skipped.forEach(function (p) { skipAt[p.back] = p; });
+    function judge(node, label, t, min, optional) {
+      t = String(t || "").trim();
+      if (optional && !t) return;
+      var where = "question " + lab(node.id) + (label ? ": " + label : "");
+      if (vague(t)) { flags.push("Non-answer at " + where + "."); vagueList.push({ q: lab(node.id), what: label || node.prompt }); }
+      else if (min && t.length < min) { flags.push("Short answer at " + where + "."); thin.push({ q: lab(node.id), what: label || node.prompt }); }
+    }
     w.path.forEach(function (n) { ids[n.id] = 1; });
     w.path.forEach(function (node) {
       var v = state.ans[node.id];
@@ -847,10 +867,10 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
         if (o && o.flag) { flags.push(o.flag); if (o.flag.indexOf("Continued after advice") === 0) advice.push({ q: lab(node.id), text: o.flag }); }
       }
       if (node.flagOn && node.flagOn[v]) flags.push(node.flagOn[v]);
-      if (node.thin && String(v || "").trim().length < node.thin) { flags.push("Short answer at question " + lab(node.id) + "."); thin.push({ q: lab(node.id), what: node.prompt }); }
+      if (node.kind === "text") judge(node, "", v, node.thin, node.optional);
       if (node.kind === "fields") {
         visFields(node).forEach(function (f) {
-          if (f.thin && String((v && v[f.id]) || "").trim().length < f.thin) { flags.push("Short answer at question " + lab(node.id) + ": " + f.label + "."); thin.push({ q: lab(node.id), what: f.label }); }
+          if (f.type === "area" || f.type === "text") judge(node, f.label, v && v[f.id], f.thin, f.optional);
         });
       }
       if (node.kind === "text") texts.push({ q: lab(node.id), t: String(v || "") });
@@ -864,6 +884,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       rows.push(row);
       if (node.dp) approver.push(row);
       if (node.verify) check.push({ q: row.q, text: node.verify });
+      if (skipAt[node.id]) check.push({ q: row.q, text: "Step skipped: " + skipAt[node.id].title + ". Read the reason, then decide whether it must be done before you approve." });
     });
     var pauses = [], skipped = [];
     Object.keys(state.notes).forEach(function (pid) {
@@ -879,7 +900,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       if (!g || g.section !== r.section) { g = { section: r.section, rows: [] }; groups.push(g); }
       g.rows.push(r);
     });
-    return { complete: w.complete, rows: rows, groups: groups, approver: approver, flags: flags, check: check, pauses: pauses, thin: thin, advice: advice, skipped: skipped, repeats: repeats(texts) };
+    return { complete: w.complete, rows: rows, groups: groups, approver: approver, flags: flags, check: check, pauses: pauses, thin: thin, advice: advice, skipped: skipped, vague: vagueList, repeats: repeats(texts) };
   }
   function today() {
     return new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
@@ -1211,12 +1232,13 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
     return "<h4>" + esc(title) + '</h4><ul class="flags">' + items.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
   }
   function sanityHtml(s) {
-    var ok = !s.thin.length && !s.advice.length && !s.repeats.length && !s.skipped.length;
-    var other = s.flags.filter(function (f) { return f.indexOf("Short answer") !== 0 && f.indexOf("Continued after advice") !== 0; });
+    var ok = !s.thin.length && !s.vague.length && !s.advice.length && !s.repeats.length && !s.skipped.length;
+    var other = s.flags.filter(function (f) { return f.indexOf("Short answer") !== 0 && f.indexOf("Non-answer") !== 0 && f.indexOf("Continued after advice") !== 0; });
     var proofs = s.rows.filter(function (r) { return r.proof; }).length;
     var h = '<div class="block ' + (ok ? "ok" : "fix") + '" id="sanity" tabindex="-1" role="status"><h3>Sanity check</h3>';
     h += '<p class="verdict">' + (ok ? "Ready to submit" : "Strengthen these answers first") + "</p>";
     h += '<p class="help">This reads only what you wrote. It does not predict approval. Your Req Approver also sees your budget and plan, which this page does not have.</p>';
+    h += sanityList("Non-answers. Say what you know, or what you will do to find out and by when.", s.vague.map(function (x) { return "Q" + x.q + ": " + clip(x.what); }));
     h += sanityList("Thin answers. Add names, dates, and numbers.", s.thin.map(function (x) { return "Q" + x.q + ": " + clip(x.what); }));
     h += sanityList("Repeated answers. Write something specific for each question.", s.repeats.map(function (x) { return "Q" + x.a + " and Q" + x.b + " have the same answer."; }));
     h += sanityList("Steps you skipped. Do them if you can. Your Req Approver will see each one.", s.skipped.map(function (x) { return "Q" + x.q + ": " + x.title; }));
@@ -1263,7 +1285,7 @@ Object.keys(FLOW.nodes).forEach(function (k) { FLOW.nodes[k].id = k; });
       "<li><b>Data point</b> answers never stop the form. They appear in the summary under For the Req Approver.</li>" +
       "<li><b>Proof</b> answers ask who, when, and what happened. Each one adds a line to the Req Approver checklist.</li>" +
       "<li>The Req Approver sends an anonymous survey to the current team with every request. The manager sees only the combined results. Question " + lab("q12") + " records how the manager feels about it and never stops the form.</li>" +
-      "<li>Short answers on key text questions are flagged for the Req Approver. Salary stays blank for HR/Compensation.</li>" +
+      "<li>Short answers on key text questions are flagged for the Req Approver. Answers under 20 words that dodge the question (for example I don\'t know, not sure, TBD, N/A, or figure it out later) are flagged as non-answers. Each skipped step adds a line to the Req Approver checklist. Salary stays blank for HR/Compensation.</li>" +
       "<li>The summary has a <b>Sanity check</b> button. It lists thin answers, repeated answers, and choices that continued after advice. It says Ready to submit or Strengthen these answers first. It gives no approval score or percentage. Nothing is sent anywhere.</li></ul>";
     h += '<h3 class="sh">Questions</h3><div class="scroll"><table><thead><tr><th>Q</th><th>Screen</th><th>Type</th><th>Next</th><th>Notes</th></tr></thead><tbody>';
     F.order.forEach(function (id) {
